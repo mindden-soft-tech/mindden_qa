@@ -4,7 +4,9 @@ import { Camera, Eye, ChevronLeft, ChevronRight, Filter, X, Edit3, Trash2 } from
 const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onEliminar, onEditar }) => {
   const [filtros, setFiltros] = useState({ id: '', modulo: '', descripcion: '', estado: '' });
   const [paginaActual, setPaginaActual] = useState(1);
-  const elementosPorPagina = 5;
+  
+  // Paginación a 10 items
+  const elementosPorPagina = 10; 
 
   const filtrados = tests.filter(t => {
     return (
@@ -30,7 +32,7 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
         <table className="table table-hover mb-0 align-middle">
           <thead className="bg-light border-bottom">
             <tr>
-              <th className="ps-4 py-3 text-secondary small fw-bold text-uppercase">ID</th>
+              <th className="ps-4 py-3 text-secondary small fw-bold text-uppercase">#</th>
               <th className="py-3 text-secondary small fw-bold text-uppercase">Módulo</th>
               <th className="py-3 text-secondary small fw-bold text-uppercase">Descripción</th>
               <th className="py-3 text-secondary small fw-bold text-uppercase">Estado</th>
@@ -39,7 +41,7 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
             </tr>
             <tr className="bg-white border-bottom">
               <th className="ps-4 py-2">
-                <input type="text" name="id" className="form-control form-control-sm border-light bg-light" placeholder="#" value={filtros.id} onChange={handleFiltroChange} />
+                <Filter size={14} className="text-muted" />
               </th>
               <th className="py-2">
                 <input type="text" name="modulo" className="form-control form-control-sm border-light bg-light" placeholder="Módulo..." value={filtros.modulo} onChange={handleFiltroChange} />
@@ -55,10 +57,10 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
                   <option value="Falló">Falló</option>
                 </select>
               </th>
-              <th className="text-center py-2"><Filter size={16} className="text-muted opacity-50" /></th>
+              <th className="text-center py-2"></th>
               <th className="text-end pe-4 py-2">
                 <button className="btn btn-sm text-primary p-0 fw-bold small" onClick={() => setFiltros({id:'', modulo:'', descripcion:'', estado:''})}>
-                  <X size={14} />
+                  <X size={14} /> Limpiar
                 </button>
               </th>
             </tr>
@@ -67,9 +69,12 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
             {elementosVisibles.length === 0 ? (
               <tr><td colSpan="6" className="text-center py-5 text-muted small">No se encontraron registros</td></tr>
             ) : (
-              elementosVisibles.map((test) => (
+              elementosVisibles.map((test, index) => (
                 <tr key={test.id} className="border-bottom border-light">
-                  <td className="ps-4 text-muted small fw-medium">#{test.id.toString().slice(-4)}</td>
+                  {/* NUMERACIÓN SECUENCIAL CORREGIDA */}
+                  <td className="ps-4 text-muted small fw-bold">
+                    {(index + 1) + (paginaActual - 1) * elementosPorPagina}
+                  </td>
                   <td><span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">{test.modulo}</span></td>
                   <td className="small text-wrap" style={{ maxWidth: '350px' }}>{test.descripcion}</td>
                   <td>

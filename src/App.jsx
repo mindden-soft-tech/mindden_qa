@@ -24,7 +24,6 @@ function App() {
     }
   };
 
-  // OPTIMIZACIÓN MEJORADA: Reduce el tamaño para que el Excel no se bloquee
   const optimizarImagen = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -34,14 +33,12 @@ function App() {
         img.src = e.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // Reducimos a 800px para que el Excel no pese megas y megas
-          const MAX_WIDTH = 800; 
+          const MAX_WIDTH = 800; // Optimización para evitar bloqueos en la descarga de Excel
           const scale = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          // Bajamos calidad a 0.6 para asegurar la descarga del Excel
           resolve(canvas.toDataURL('image/jpeg', 0.6)); 
         };
       };
@@ -67,17 +64,16 @@ function App() {
     reader.readAsBinaryString(file);
   };
 
-  // FUNCIÓN DE EXPORTACIÓN REFORZADA
   const exportarExcel = () => {
     try {
       if (tests.length === 0) return alert("No hay datos para exportar");
       
-      const dataParaExcel = tests.map(t => ({
-        ID: t.id,
+      const dataParaExcel = tests.map((t, index) => ({
+        "#": index + 1, // Numeración secuencial en el Excel también
         Modulo: t.modulo || '',
         Descripcion: t.descripcion || '',
         Estado: t.estado || 'Pendiente',
-        Captura_B64: t.captura || '' // Aquí va el base64 optimizado
+        Captura_B64: t.captura || ''
       }));
 
       const ws = XLSX.utils.json_to_sheet(dataParaExcel);
@@ -87,7 +83,7 @@ function App() {
       XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error("Error al exportar:", error);
-      alert("Error al generar el Excel. Es posible que las fotos sean demasiado grandes.");
+      alert("Error al generar el Excel por el tamaño de las fotos.");
     }
   };
 
@@ -107,7 +103,6 @@ function App() {
   return (
     <div className="bg-light min-vh-100 pb-5">
       <div className="container-fluid py-4 px-md-5">
-        
         <header className="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded shadow-sm">
           <div>
             <h1 className="h3 mb-1 text-primary fw-bold">Mindden TestSheet Manager Pro</h1>
@@ -179,7 +174,6 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
-        {/* MODAL DE EDICIÓN ANCHO */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -209,28 +203,22 @@ function App() {
                           </select>
                         </div>
                       </div>
-                      <div className="col-md-5">
-                        <label className="form-label small fw-bold text-muted">EVIDENCIA / FOTO</label>
-                        <div className="border rounded p-3 bg-light text-center h-100 d-flex flex-column align-items-center justify-content-center shadow-inner" style={{minHeight: '280px'}}>
+                      <div className="col-md-5 text-center">
+                        <div className="border rounded p-3 bg-light shadow-inner" style={{minHeight: '280px'}}>
                           {testEnEdicion.captura ? (
                             <>
-                              <img src={testEnEdicion.captura} className="img-fluid rounded mb-3 shadow" style={{maxHeight: '220px'}} alt="Previsualización" />
+                              <img src={testEnEdicion.captura} className="img-fluid rounded mb-3 shadow" style={{maxHeight: '200px'}} alt="Previsualización" />
                               <button type="button" className="btn btn-sm btn-outline-danger w-100 mb-2" onClick={() => setTestEnEdicion({...testEnEdicion, captura: ''})}>Eliminar Foto</button>
                             </>
                           ) : (
-                            <div className="py-4 text-muted">
-                              <Camera size={48} className="opacity-25 mb-2" />
-                              <p className="small">Sin imagen adjunta</p>
-                            </div>
+                            <div className="py-5 text-muted opacity-50"><Camera size={48} /></div>
                           )}
-                          <div className="w-100">
-                            <input type="file" className="form-control form-control-sm" accept="image/*" onChange={async (e) => {
-                              if(e.target.files[0]) {
-                                const img = await optimizarImagen(e.target.files[0]);
-                                setTestEnEdicion({...testEnEdicion, captura: img});
-                              }
-                            }} />
-                          </div>
+                          <input type="file" className="form-control form-control-sm" accept="image/*" onChange={async (e) => {
+                            if(e.target.files[0]) {
+                              const img = await optimizarImagen(e.target.files[0]);
+                              setTestEnEdicion({...testEnEdicion, captura: img});
+                            }
+                          }} />
                         </div>
                       </div>
                     </div>
@@ -247,7 +235,6 @@ function App() {
           </div>
         )}
 
-        {/* LIGHTBOX IMAGEN */}
         {testSeleccionado && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}} onClick={() => setTestSeleccionado(null)}>
             <div className="modal-dialog modal-xl modal-dialog-centered">
