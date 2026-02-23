@@ -22,7 +22,6 @@ function App() {
   const [testSeleccionado, setTestSeleccionado] = useState(null);
   const [testEnEdicion, setTestEnEdicion] = useState(null);
   
-  // Estados de carga
   const [isExporting, setIsExporting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -37,7 +36,6 @@ function App() {
     }
   };
 
-  // FUNCIÓN DE SUBIDA A CLOUDINARY
   const subirACloudinary = async (file) => {
     if (!file) return null;
     setIsUploading(true);
@@ -84,7 +82,6 @@ function App() {
         estado: item.Estado || 'Pendiente',
         asignadoA: item.Asignado_A || '',
         tiempoEstimado: item.Tiempo_Minutos || '',
-        // ✅ CORRECCIÓN: Ahora busca "URL_Evidencia" que es el nombre usado en la exportación
         captura: item.URL_Evidencia || item.Captura_URL || item.Captura_B64 || ''
       })));
     };
@@ -105,7 +102,7 @@ function App() {
           "Asignado_A": t.asignadoA || '',
           "Tiempo_Minutos": t.tiempoEstimado || '',
           "Estado": t.estado || 'Pendiente',
-          "URL_Evidencia": t.captura || '' // ✅ Nombre de columna estandarizado
+          "URL_Evidencia": t.captura || ''
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataParaExcel);
@@ -135,9 +132,10 @@ function App() {
     }, 100);
   };
 
+  // ✅ CORRECCIÓN: Función robusta para guardar cambios incluyendo la nueva imagen
   const handleGuardarCambios = (e) => {
     e.preventDefault();
-    setTests(tests.map(t => t.id === testEnEdicion.id ? testEnEdicion : t));
+    setTests(tests.map(t => t.id === testEnEdicion.id ? { ...testEnEdicion } : t));
     setTestEnEdicion(null);
   };
 
@@ -186,6 +184,7 @@ function App() {
           </div>
         </header>
 
+        {/* Stats */}
         <div className="row g-4 mb-4">
           {[
             {label: 'TOTAL', val: stats.total, color: 'primary'},
@@ -207,6 +206,7 @@ function App() {
           </div>
         </div>
 
+        {/* Formulario Añadir */}
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
             <form className="row g-3 align-items-end" onSubmit={(e) => {
@@ -253,6 +253,7 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
+        {/* Modal Editar Corregido */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -298,8 +299,9 @@ function App() {
                           {testEnEdicion.captura && <img src={testEnEdicion.captura} className="img-fluid rounded mb-2 shadow-sm" style={{maxHeight: '150px'}} alt="Evidencia" />}
                           <input type="file" className="form-control form-control-sm" onChange={async (e) => {
                             if(e.target.files[0]) {
+                              // ✅ CORRECCIÓN: Subir a Cloudinary y actualizar el estado temporal del modal inmediatamente
                               const url = await subirACloudinary(e.target.files[0]);
-                              if(url) setTestEnEdicion({...testEnEdicion, captura: url});
+                              if(url) setTestEnEdicion(prev => ({...prev, captura: url}));
                             }
                           }} />
                         </div>
@@ -325,13 +327,8 @@ function App() {
         )}
       </div>
       <style>{`
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
