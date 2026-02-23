@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera, Clock, User, Loader2 } from 'lucide-react';
+import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera, Clock, User, Loader2, CloudLightning } from 'lucide-react';
 import TablaTests from './components/TablaTests';
 
 function App() {
@@ -9,14 +9,22 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // =========================================================
+  // ✅ CONFIGURACIÓN CLOUDINARY (dzm6gj8ol / testsheet_preset)
+  // =========================================================
+  const CLOUD_NAME = "dzm6gj8ol"; 
+  const UPLOAD_PRESET = "testsheet_preset"; 
+  // =========================================================
+
   const [nuevoTest, setNuevoTest] = useState({ 
     modulo: '', descripcion: '', estado: 'Pendiente', captura: '', asignadoA: '', tiempoEstimado: '' 
   });
   const [testSeleccionado, setTestSeleccionado] = useState(null);
   const [testEnEdicion, setTestEnEdicion] = useState(null);
   
-  // Nuevo estado para controlar la exportación
+  // Estados de carga
   const [isExporting, setIsExporting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('tester_app_data', JSON.stringify(tests));
@@ -29,25 +37,35 @@ function App() {
     }
   };
 
-  const optimizarImagen = (file) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (e) => {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const scale = MAX_WIDTH / img.width;
-          canvas.width = MAX_WIDTH;
-          canvas.height = img.height * scale;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.6)); 
-        };
-      };
-    });
+  // NUEVA FUNCIÓN DE SUBIDA A CLOUDINARY
+  const subirACloudinary = async (file) => {
+    if (!file) return null;
+    setIsUploading(true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Fallo en la subida a la nube");
+      }
+      
+      setIsUploading(false);
+      return data.secure_url; 
+    } catch (error) {
+      console.error("Error en Cloudinary:", error);
+      alert(`❌ Error al guardar imagen: ${error.message}`);
+      setIsUploading(false);
+      return null;
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -60,12 +78,12 @@ function App() {
       const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
       setTests(data.map((item, idx) => ({
         id: item.ID || Date.now() + idx,
-        modulo: item.Modulo || '',
-        descripcion: item.Descripcion || '',
+        modulo: item.Modulo || item.Módulo || '',
+        descripcion: item.Descripcion || item.Descripción || '',
         estado: item.Estado || 'Pendiente',
         asignadoA: item.Asignado_A || '',
         tiempoEstimado: item.Tiempo_Minutos || '',
-        captura: item.Captura_B64 || ''
+        captura: item.Captura_URL || item.Captura_B64 || ''
       })));
     };
     reader.readAsBinaryString(file);
@@ -74,10 +92,8 @@ function App() {
   const exportarExcel = async () => {
     if (tests.length === 0) return alert("No hay datos para exportar");
     
-    setIsExporting(true); // Iniciamos estado de carga
+    setIsExporting(true);
 
-    // Usamos un pequeño delay con setTimeout para permitir que el DOM renderice el estado de carga
-    // antes de que el hilo principal se bloquee con la generación del Excel
     setTimeout(() => {
       try {
         const dataParaExcel = tests.map((t, index) => ({
@@ -87,7 +103,7 @@ function App() {
           Asignado_A: t.asignadoA || '',
           Tiempo_Minutos: t.tiempoEstimado || '',
           Estado: t.estado || 'Pendiente',
-          Captura_B64: t.captura || ''
+          URL_Evidencia: t.captura || ''
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataParaExcel);
@@ -110,9 +126,9 @@ function App() {
         window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error("Error al exportar:", error);
-        alert("Error al generar el Excel. Intente reducir el número de capturas.");
+        alert("Error al generar el Excel.");
       } finally {
-        setIsExporting(false); // Finalizamos estado de carga
+        setIsExporting(false);
       }
     }, 100);
   };
@@ -132,11 +148,19 @@ function App() {
 
   return (
     <div className="bg-light min-vh-100 pb-5">
+      {/* Indicador de carga para Cloudinary */}
+      {isUploading && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-75" style={{zIndex: 9999}}>
+          <Loader2 className="text-white animate-spin mb-3" size={60} />
+          <h4 className="text-white fw-bold">GUARDANDO EN LA NUBE...</h4>
+        </div>
+      )}
+
       <div className="container-fluid py-4 px-md-5">
         <header className="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded shadow-sm">
           <div>
             <h1 className="h3 mb-1 text-primary fw-bold">Mindden TestSheet Manager Pro</h1>
-            <p className="text-muted mb-0 small fw-bold">QA CONTROL PANEL</p>
+            <p className="text-muted mb-0 small fw-bold">QA CONTROL PANEL <CloudLightning size={14} className="text-warning" /></p>
           </div>
           <div className="d-flex gap-2">
             <label className="btn btn-outline-primary fw-bold" style={{cursor: 'pointer'}}>
@@ -216,8 +240,10 @@ function App() {
           tests={tests} 
           onImageUpload={async (e, id) => {
             if(e.target.files[0]) {
-              const img = await optimizarImagen(e.target.files[0]);
-              setTests(tests.map(t => t.id === id ? { ...t, captura: img } : t));
+              const url = await subirACloudinary(e.target.files[0]);
+              if(url) {
+                setTests(tests.map(t => t.id === id ? { ...t, captura: url } : t));
+              }
             }
           }} 
           onVerImagen={setTestSeleccionado}
@@ -227,7 +253,7 @@ function App() {
         />
 
         {testEnEdicion && (
-          <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
+          <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
               <div className="modal-content border-0">
                 <div className="modal-header bg-primary text-white">
@@ -266,13 +292,13 @@ function App() {
                         </div>
                       </div>
                       <div className="col-md-5">
-                        <label className="form-label small fw-bold">EVIDENCIA</label>
+                        <label className="form-label small fw-bold">EVIDENCIA EN LA NUBE</label>
                         <div className="border rounded p-2 bg-light text-center">
-                          {testEnEdicion.captura && <img src={testEnEdicion.captura} className="img-fluid rounded mb-2" style={{maxHeight: '150px'}} />}
+                          {testEnEdicion.captura && <img src={testEnEdicion.captura} className="img-fluid rounded mb-2 shadow-sm" style={{maxHeight: '150px'}} alt="Evidencia" />}
                           <input type="file" className="form-control form-control-sm" onChange={async (e) => {
                             if(e.target.files[0]) {
-                              const img = await optimizarImagen(e.target.files[0]);
-                              setTestEnEdicion({...testEnEdicion, captura: img});
+                              const url = await subirACloudinary(e.target.files[0]);
+                              if(url) setTestEnEdicion({...testEnEdicion, captura: url});
                             }
                           }} />
                         </div>
@@ -290,9 +316,9 @@ function App() {
         )}
 
         {testSeleccionado && (
-          <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}} onClick={() => setTestSeleccionado(null)}>
+          <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 1100}} onClick={() => setTestSeleccionado(null)}>
             <div className="modal-dialog modal-xl modal-dialog-centered text-center">
-              <img src={testSeleccionado.captura} className="img-fluid rounded" style={{ maxHeight: '90vh' }} alt="Evidencia" />
+              <img src={testSeleccionado.captura} className="img-fluid rounded shadow-lg" style={{ maxHeight: '90vh' }} alt="Evidencia Full" />
             </div>
           </div>
         )}
