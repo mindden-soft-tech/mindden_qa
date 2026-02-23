@@ -37,7 +37,7 @@ function App() {
     }
   };
 
-  // NUEVA FUNCIÓN DE SUBIDA A CLOUDINARY
+  // FUNCIÓN DE SUBIDA A CLOUDINARY
   const subirACloudinary = async (file) => {
     if (!file) return null;
     setIsUploading(true);
@@ -76,6 +76,7 @@ function App() {
       const bstr = evt.target.result;
       const wb = XLSX.read(bstr, { type: 'binary' });
       const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+      
       setTests(data.map((item, idx) => ({
         id: item.ID || Date.now() + idx,
         modulo: item.Modulo || item.Módulo || '',
@@ -83,7 +84,8 @@ function App() {
         estado: item.Estado || 'Pendiente',
         asignadoA: item.Asignado_A || '',
         tiempoEstimado: item.Tiempo_Minutos || '',
-        captura: item.Captura_URL || item.Captura_B64 || ''
+        // ✅ CORRECCIÓN: Ahora busca "URL_Evidencia" que es el nombre usado en la exportación
+        captura: item.URL_Evidencia || item.Captura_URL || item.Captura_B64 || ''
       })));
     };
     reader.readAsBinaryString(file);
@@ -97,13 +99,13 @@ function App() {
     setTimeout(() => {
       try {
         const dataParaExcel = tests.map((t, index) => ({
-          "#": index + 1,
-          Modulo: t.modulo || '',
-          Descripcion: t.descripcion || '',
-          Asignado_A: t.asignadoA || '',
-          Tiempo_Minutos: t.tiempoEstimado || '',
-          Estado: t.estado || 'Pendiente',
-          URL_Evidencia: t.captura || ''
+          "ID": t.id,
+          "Modulo": t.modulo || '',
+          "Descripcion": t.descripcion || '',
+          "Asignado_A": t.asignadoA || '',
+          "Tiempo_Minutos": t.tiempoEstimado || '',
+          "Estado": t.estado || 'Pendiente',
+          "URL_Evidencia": t.captura || '' // ✅ Nombre de columna estandarizado
         }));
 
         const ws = XLSX.utils.json_to_sheet(dataParaExcel);
@@ -148,7 +150,6 @@ function App() {
 
   return (
     <div className="bg-light min-vh-100 pb-5">
-      {/* Indicador de carga para Cloudinary */}
       {isUploading && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center bg-dark bg-opacity-75" style={{zIndex: 9999}}>
           <Loader2 className="text-white animate-spin mb-3" size={60} />
@@ -165,7 +166,7 @@ function App() {
           <div className="d-flex gap-2">
             <label className="btn btn-outline-primary fw-bold" style={{cursor: 'pointer'}}>
               <FileUp size={18} className="me-2" /> Cargar
-              <input type="file" hidden onChange={handleFileUpload} />
+              <input type="file" hidden onChange={handleFileUpload} accept=".xlsx" />
             </label>
             <button 
               className="btn btn-success fw-bold d-flex align-items-center" 
