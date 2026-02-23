@@ -66,24 +66,44 @@ function App() {
     }
   };
 
+  // ✅ CORRECCIÓN: Función de carga robusta y flexible
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-      
-      setTests(data.map((item, idx) => ({
-        id: item.ID || Date.now() + idx,
-        modulo: item.Modulo || item.Módulo || '',
-        descripcion: item.Descripcion || item.Descripción || '',
-        estado: item.Estado || 'Pendiente',
-        asignadoA: item.Asignado_A || '',
-        tiempoEstimado: item.Tiempo_Minutos || '',
-        captura: item.URL_Evidencia || item.Captura_URL || item.Captura_B64 || ''
-      })));
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (data.length === 0) {
+          alert("El archivo Excel parece estar vacío.");
+          return;
+        }
+
+        // Mapeo inteligente de columnas para evitar que los datos se pierdan
+        const nuevosTests = data.map((item, idx) => ({
+          id: item.ID || item.id || Date.now() + idx,
+          modulo: item.Modulo || item.Módulo || item.modulo || '',
+          descripcion: item.Descripcion || item.Descripción || item.descripcion || '',
+          estado: item.Estado || item.estado || 'Pendiente',
+          asignadoA: item.Asignado_A || item.Asignado_a || item.asignadoA || item['Asignado A'] || '',
+          tiempoEstimado: item.Tiempo_Minutos || item.tiempoEstimado || item.minutos || '',
+          captura: item.URL_Evidencia || item.captura || item.Captura_URL || item.Captura_B64 || ''
+        }));
+
+        setTests(nuevosTests);
+        alert(`✅ Se han cargado ${nuevosTests.length} registros correctamente.`);
+      } catch (error) {
+        console.error("Error al leer Excel:", error);
+        alert("Error al procesar el archivo Excel. Asegúrate de que el formato sea correcto.");
+      }
+      // Limpiamos el input para permitir recargar el mismo archivo si se desea
+      e.target.value = "";
     };
     reader.readAsBinaryString(file);
   };
@@ -132,7 +152,6 @@ function App() {
     }, 100);
   };
 
-  // ✅ CORRECCIÓN: Función robusta para guardar cambios incluyendo la nueva imagen
   const handleGuardarCambios = (e) => {
     e.preventDefault();
     setTests(tests.map(t => t.id === testEnEdicion.id ? { ...testEnEdicion } : t));
@@ -164,7 +183,7 @@ function App() {
           <div className="d-flex gap-2">
             <label className="btn btn-outline-primary fw-bold" style={{cursor: 'pointer'}}>
               <FileUp size={18} className="me-2" /> Cargar
-              <input type="file" hidden onChange={handleFileUpload} accept=".xlsx" />
+              <input type="file" hidden onChange={handleFileUpload} accept=".xlsx, .xls" />
             </label>
             <button 
               className="btn btn-success fw-bold d-flex align-items-center" 
@@ -253,7 +272,7 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
-        {/* Modal Editar Corregido */}
+        {/* Modal Editar */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -299,7 +318,6 @@ function App() {
                           {testEnEdicion.captura && <img src={testEnEdicion.captura} className="img-fluid rounded mb-2 shadow-sm" style={{maxHeight: '150px'}} alt="Evidencia" />}
                           <input type="file" className="form-control form-control-sm" onChange={async (e) => {
                             if(e.target.files[0]) {
-                              // ✅ CORRECCIÓN: Subir a Cloudinary y actualizar el estado temporal del modal inmediatamente
                               const url = await subirACloudinary(e.target.files[0]);
                               if(url) setTestEnEdicion(prev => ({...prev, captura: url}));
                             }
