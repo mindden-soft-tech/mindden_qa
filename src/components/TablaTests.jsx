@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Camera, Eye, ChevronLeft, ChevronRight, Filter, X } from 'lucide-react';
+import { Camera, Eye, ChevronLeft, ChevronRight, Filter, X, Edit3, Trash2 } from 'lucide-react';
 
-const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onEliminar }) => {
+const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onEliminar, onEditar }) => {
   const [filtros, setFiltros] = useState({ id: '', modulo: '', descripcion: '', estado: '' });
   const [paginaActual, setPaginaActual] = useState(1);
   const elementosPorPagina = 5;
@@ -35,7 +35,7 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
               <th className="py-3 text-secondary small fw-bold text-uppercase">Descripción</th>
               <th className="py-3 text-secondary small fw-bold text-uppercase">Estado</th>
               <th className="py-3 text-secondary small fw-bold text-uppercase text-center">Evidencia</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase text-end pe-4">Acción</th>
+              <th className="py-3 text-secondary small fw-bold text-uppercase text-end pe-4">Acciones</th>
             </tr>
             <tr className="bg-white border-bottom">
               <th className="ps-4 py-2">
@@ -45,7 +45,7 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
                 <input type="text" name="modulo" className="form-control form-control-sm border-light bg-light" placeholder="Módulo..." value={filtros.modulo} onChange={handleFiltroChange} />
               </th>
               <th className="py-2">
-                <input type="text" name="descripcion" className="form-control form-control-sm border-light bg-light" placeholder="Descripción..." value={filtros.descripcion} onChange={handleFiltroChange} />
+                <input type="text" name="descripcion" className="form-control form-control-sm border-light bg-light" placeholder="Buscar..." value={filtros.descripcion} onChange={handleFiltroChange} />
               </th>
               <th className="py-2">
                 <select name="estado" className="form-select form-select-sm border-light bg-light" value={filtros.estado} onChange={handleFiltroChange}>
@@ -99,7 +99,16 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
                     )}
                   </td>
                   <td className="text-end pe-4">
-                    <button className="btn btn-link btn-sm text-danger text-decoration-none fw-bold" onClick={() => onEliminar(test.id)}>Eliminar</button>
+                    <div className="d-flex justify-content-end gap-2">
+                      {/* Botón de Lápiz */}
+                      <button className="btn btn-light btn-sm text-primary border shadow-sm" title="Editar" onClick={() => onEditar(test)}>
+                        <Edit3 size={16} />
+                      </button>
+                      {/* Botón de Basura */}
+                      <button className="btn btn-light btn-sm text-danger border shadow-sm" title="Eliminar" onClick={() => onEliminar(test.id)}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
