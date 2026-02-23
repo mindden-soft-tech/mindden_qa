@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera } from 'lucide-react';
+import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera, Clock, User } from 'lucide-react';
 import TablaTests from './components/TablaTests';
 
 function App() {
@@ -9,7 +9,9 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [nuevoTest, setNuevoTest] = useState({ modulo: '', descripcion: '', estado: 'Pendiente', captura: '' });
+  const [nuevoTest, setNuevoTest] = useState({ 
+    modulo: '', descripcion: '', estado: 'Pendiente', captura: '', asignadoA: '', tiempoEstimado: '' 
+  });
   const [testSeleccionado, setTestSeleccionado] = useState(null);
   const [testEnEdicion, setTestEnEdicion] = useState(null);
 
@@ -33,7 +35,7 @@ function App() {
         img.src = e.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800; // Optimización para evitar bloqueos en la descarga de Excel
+          const MAX_WIDTH = 800;
           const scale = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scale;
@@ -58,6 +60,8 @@ function App() {
         modulo: item.Modulo || '',
         descripcion: item.Descripcion || '',
         estado: item.Estado || 'Pendiente',
+        asignadoA: item.Asignado_A || '',
+        tiempoEstimado: item.Tiempo_Minutos || '',
         captura: item.Captura_B64 || ''
       })));
     };
@@ -67,23 +71,21 @@ function App() {
   const exportarExcel = () => {
     try {
       if (tests.length === 0) return alert("No hay datos para exportar");
-      
       const dataParaExcel = tests.map((t, index) => ({
-        "#": index + 1, // Numeración secuencial en el Excel también
+        "#": index + 1,
         Modulo: t.modulo || '',
         Descripcion: t.descripcion || '',
+        Asignado_A: t.asignadoA || '',
+        Tiempo_Minutos: t.tiempoEstimado || '',
         Estado: t.estado || 'Pendiente',
         Captura_B64: t.captura || ''
       }));
-
       const ws = XLSX.utils.json_to_sheet(dataParaExcel);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
-      
       XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
-      console.error("Error al exportar:", error);
-      alert("Error al generar el Excel por el tamaño de las fotos.");
+      alert("Error al generar el Excel. Reduzca el tamaño de las fotos.");
     }
   };
 
@@ -109,17 +111,17 @@ function App() {
             <p className="text-muted mb-0 small fw-bold">QA CONTROL PANEL</p>
           </div>
           <div className="d-flex gap-2">
-            <label className="btn btn-outline-primary shadow-sm fw-bold" style={{cursor: 'pointer'}}>
-              <FileUp size={18} className="me-2" /> Cargar Excel
+            <label className="btn btn-outline-primary fw-bold" style={{cursor: 'pointer'}}>
+              <FileUp size={18} className="me-2" /> Cargar
               <input type="file" hidden onChange={handleFileUpload} />
             </label>
-            <button className="btn btn-success shadow-sm fw-bold" onClick={exportarExcel}>
+            <button className="btn btn-success fw-bold" onClick={exportarExcel}>
               <Download size={18} className="me-2" /> Exportar Excel
             </button>
           </div>
         </header>
 
-        <div className="row g-4 mb-4 align-items-stretch">
+        <div className="row g-4 mb-4">
           {[
             {label: 'TOTAL', val: stats.total, color: 'primary'},
             {label: 'PASÓ', val: stats.paso, color: 'success'},
@@ -133,28 +135,39 @@ function App() {
               </div>
             </div>
           ))}
-          <div className="col-md-4 text-end d-flex align-items-center justify-content-end">
-            <button className="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill shadow-sm" onClick={reiniciarBaseDeDatos}>
-              <Trash2 size={18} className="me-2"/> Limpiar Proyecto
+          <div className="col-md-4 d-flex align-items-center justify-content-end">
+            <button className="btn btn-outline-danger fw-bold rounded-pill" onClick={reiniciarBaseDeDatos}>
+              <Trash2 size={18} className="me-2"/> Limpiar Todo
             </button>
           </div>
         </div>
 
+        {/* FORMULARIO AMPLIADO */}
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
             <form className="row g-3 align-items-end" onSubmit={(e) => {
               e.preventDefault();
               setTests([...tests, { ...nuevoTest, id: Date.now() }]);
-              setNuevoTest({ modulo: '', descripcion: '', estado: 'Pendiente', captura: '' });
+              setNuevoTest({ modulo: '', descripcion: '', estado: 'Pendiente', captura: '', asignadoA: '', tiempoEstimado: '' });
             }}>
-              <div className="col-md-3">
-                <input type="text" className="form-control" placeholder="Módulo..." value={nuevoTest.modulo} onChange={e => setNuevoTest({...nuevoTest, modulo: e.target.value})} required />
+              <div className="col-md-2">
+                <label className="small fw-bold text-muted">MÓDULO</label>
+                <input type="text" className="form-control" placeholder="Ej: Login" value={nuevoTest.modulo} onChange={e => setNuevoTest({...nuevoTest, modulo: e.target.value})} required />
               </div>
-              <div className="col-md-7">
-                <input type="text" className="form-control" placeholder="Descripción de la prueba..." value={nuevoTest.descripcion} onChange={e => setNuevoTest({...nuevoTest, descripcion: e.target.value})} required />
+              <div className="col-md-4">
+                <label className="small fw-bold text-muted">DESCRIPCIÓN</label>
+                <input type="text" className="form-control" placeholder="¿Qué falló?" value={nuevoTest.descripcion} onChange={e => setNuevoTest({...nuevoTest, descripcion: e.target.value})} required />
               </div>
               <div className="col-md-2">
-                <button type="submit" className="btn btn-primary w-100 shadow-sm fw-bold"><PlusCircle size={20} className="me-1"/> Añadir</button>
+                <label className="small fw-bold text-muted">ASIGNADO A</label>
+                <input type="text" className="form-control" placeholder="Nombre Dev" value={nuevoTest.asignadoA} onChange={e => setNuevoTest({...nuevoTest, asignadoA: e.target.value})} required />
+              </div>
+              <div className="col-md-2">
+                <label className="small fw-bold text-muted">TIEMPO MOFIDICACIÓN (MIN)</label>
+                <input type="number" className="form-control" placeholder="Ej: 30" value={nuevoTest.tiempoEstimado} onChange={e => setNuevoTest({...nuevoTest, tiempoEstimado: e.target.value})} required />
+              </div>
+              <div className="col-md-2">
+                <button type="submit" className="btn btn-primary w-100 fw-bold"><PlusCircle size={20} className="me-1"/> Añadir</button>
               </div>
             </form>
           </div>
@@ -170,16 +183,17 @@ function App() {
           }} 
           onVerImagen={setTestSeleccionado}
           onCambiarEstado={(id, val) => setTests(tests.map(t => t.id === id ? { ...t, estado: val } : t))}
-          onEliminar={(id) => { if(window.confirm("¿Eliminar registro?")) setTests(tests.filter(t => t.id !== id)) }}
+          onEliminar={(id) => { if(window.confirm("¿Eliminar?")) setTests(tests.filter(t => t.id !== id)) }}
           onEditar={setTestEnEdicion}
         />
 
+        {/* MODAL EDICIÓN AMPLIADO */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
-              <div className="modal-content border-0 shadow-lg">
-                <div className="modal-header bg-primary text-white border-0 py-3">
-                  <h5 className="modal-title fw-bold">Modificar Caso de Prueba</h5>
+              <div className="modal-content border-0">
+                <div className="modal-header bg-primary text-white">
+                  <h5 className="modal-title fw-bold">Editar Caso de Prueba</h5>
                   <button type="button" className="btn-close btn-close-white" onClick={() => setTestEnEdicion(null)}></button>
                 </div>
                 <form onSubmit={handleGuardarCambios}>
@@ -187,33 +201,37 @@ function App() {
                     <div className="row g-4">
                       <div className="col-md-7">
                         <div className="mb-3">
-                          <label className="form-label small fw-bold text-muted">MÓDULO</label>
-                          <input type="text" className="form-control border-primary-subtle" value={testEnEdicion.modulo} onChange={e => setTestEnEdicion({...testEnEdicion, modulo: e.target.value})} required />
+                          <label className="form-label small fw-bold">MÓDULO</label>
+                          <input type="text" className="form-control" value={testEnEdicion.modulo} onChange={e => setTestEnEdicion({...testEnEdicion, modulo: e.target.value})} />
                         </div>
                         <div className="mb-3">
-                          <label className="form-label small fw-bold text-muted">DESCRIPCIÓN</label>
-                          <textarea className="form-control border-primary-subtle" rows="6" value={testEnEdicion.descripcion} onChange={e => setTestEnEdicion({...testEnEdicion, descripcion: e.target.value})} required />
+                          <label className="form-label small fw-bold">DESCRIPCIÓN</label>
+                          <textarea className="form-control" rows="3" value={testEnEdicion.descripcion} onChange={e => setTestEnEdicion({...testEnEdicion, descripcion: e.target.value})} />
                         </div>
-                        <div>
-                          <label className="form-label small fw-bold text-muted">ESTADO</label>
-                          <select className="form-select border-primary-subtle fw-bold" value={testEnEdicion.estado} onChange={e => setTestEnEdicion({...testEnEdicion, estado: e.target.value})}>
+                        <div className="row mb-3">
+                          <div className="col">
+                            <label className="form-label small fw-bold">ASIGNADO A</label>
+                            <input type="text" className="form-control" value={testEnEdicion.asignadoA} onChange={e => setTestEnEdicion({...testEnEdicion, asignadoA: e.target.value})} />
+                          </div>
+                          <div className="col">
+                            <label className="form-label small fw-bold">TIEMPO (MIN)</label>
+                            <input type="number" className="form-control" value={testEnEdicion.tiempoEstimado} onChange={e => setTestEnEdicion({...testEnEdicion, tiempoEstimado: e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="mb-3">
+                          <label className="form-label small fw-bold">ESTADO</label>
+                          <select className="form-select fw-bold" value={testEnEdicion.estado} onChange={e => setTestEnEdicion({...testEnEdicion, estado: e.target.value})}>
                             <option value="Pendiente">Pendiente</option>
                             <option value="Pasó">Pasó</option>
                             <option value="Falló">Falló</option>
                           </select>
                         </div>
                       </div>
-                      <div className="col-md-5 text-center">
-                        <div className="border rounded p-3 bg-light shadow-inner" style={{minHeight: '280px'}}>
-                          {testEnEdicion.captura ? (
-                            <>
-                              <img src={testEnEdicion.captura} className="img-fluid rounded mb-3 shadow" style={{maxHeight: '200px'}} alt="Previsualización" />
-                              <button type="button" className="btn btn-sm btn-outline-danger w-100 mb-2" onClick={() => setTestEnEdicion({...testEnEdicion, captura: ''})}>Eliminar Foto</button>
-                            </>
-                          ) : (
-                            <div className="py-5 text-muted opacity-50"><Camera size={48} /></div>
-                          )}
-                          <input type="file" className="form-control form-control-sm" accept="image/*" onChange={async (e) => {
+                      <div className="col-md-5">
+                        <label className="form-label small fw-bold">EVIDENCIA</label>
+                        <div className="border rounded p-2 bg-light text-center">
+                          {testEnEdicion.captura && <img src={testEnEdicion.captura} className="img-fluid rounded mb-2" style={{maxHeight: '150px'}} />}
+                          <input type="file" className="form-control form-control-sm" onChange={async (e) => {
                             if(e.target.files[0]) {
                               const img = await optimizarImagen(e.target.files[0]);
                               setTestEnEdicion({...testEnEdicion, captura: img});
@@ -223,11 +241,9 @@ function App() {
                       </div>
                     </div>
                   </div>
-                  <div className="modal-footer bg-light border-0 py-3">
-                    <button type="button" className="btn btn-white border px-4" onClick={() => setTestEnEdicion(null)}>Cerrar</button>
-                    <button type="submit" className="btn btn-primary px-5 fw-bold shadow-sm d-flex align-items-center">
-                      <Save size={18} className="me-2"/> Actualizar Información
-                    </button>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setTestEnEdicion(null)}>Cerrar</button>
+                    <button type="submit" className="btn btn-primary px-4 fw-bold"><Save size={18} className="me-2"/> Guardar Cambios</button>
                   </div>
                 </form>
               </div>
@@ -237,11 +253,8 @@ function App() {
 
         {testSeleccionado && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}} onClick={() => setTestSeleccionado(null)}>
-            <div className="modal-dialog modal-xl modal-dialog-centered">
-              <div className="modal-content bg-transparent border-0 text-center">
-                <button className="btn btn-light rounded-circle p-2 mb-2 align-self-end" onClick={() => setTestSeleccionado(null)}><X size={24}/></button>
-                <img src={testSeleccionado.captura} className="img-fluid rounded shadow-lg" style={{ maxHeight: '85vh', objectFit: 'contain' }} alt="Evidencia" />
-              </div>
+            <div className="modal-dialog modal-xl modal-dialog-centered text-center">
+              <img src={testSeleccionado.captura} className="img-fluid rounded" style={{ maxHeight: '90vh' }} alt="Evidencia" />
             </div>
           </div>
         )}
