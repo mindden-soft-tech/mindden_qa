@@ -24,6 +24,7 @@ function App() {
     }
   };
 
+  // OPTIMIZACIÓN MEJORADA: Reduce el tamaño para que el Excel no se bloquee
   const optimizarImagen = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -33,13 +34,15 @@ function App() {
         img.src = e.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1000;
+          // Reducimos a 800px para que el Excel no pese megas y megas
+          const MAX_WIDTH = 800; 
           const scale = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scale;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
+          // Bajamos calidad a 0.6 para asegurar la descarga del Excel
+          resolve(canvas.toDataURL('image/jpeg', 0.6)); 
         };
       };
     });
@@ -64,25 +67,28 @@ function App() {
     reader.readAsBinaryString(file);
   };
 
-  // FUNCIÓN CORREGIDA PARA EXPORTAR EXCEL
+  // FUNCIÓN DE EXPORTACIÓN REFORZADA
   const exportarExcel = () => {
-    if (tests.length === 0) return alert("No hay datos para exportar");
-    
-    // Mapeo explícito para asegurar que todas las columnas existan
-    const dataParaExcel = tests.map(t => ({
-      ID: t.id,
-      Modulo: t.modulo || '',
-      Descripcion: t.descripcion || '',
-      Estado: t.estado || 'Pendiente',
-      Captura_B64: t.captura || ''
-    }));
+    try {
+      if (tests.length === 0) return alert("No hay datos para exportar");
+      
+      const dataParaExcel = tests.map(t => ({
+        ID: t.id,
+        Modulo: t.modulo || '',
+        Descripcion: t.descripcion || '',
+        Estado: t.estado || 'Pendiente',
+        Captura_B64: t.captura || '' // Aquí va el base64 optimizado
+      }));
 
-    const ws = XLSX.utils.json_to_sheet(dataParaExcel);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
-    
-    // Forzar la descarga del archivo
-    XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const ws = XLSX.utils.json_to_sheet(dataParaExcel);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
+      
+      XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error("Error al exportar:", error);
+      alert("Error al generar el Excel. Es posible que las fotos sean demasiado grandes.");
+    }
   };
 
   const handleGuardarCambios = (e) => {
@@ -102,7 +108,6 @@ function App() {
     <div className="bg-light min-vh-100 pb-5">
       <div className="container-fluid py-4 px-md-5">
         
-        {/* HEADER */}
         <header className="d-flex justify-content-between align-items-center mb-4 bg-white p-4 rounded shadow-sm">
           <div>
             <h1 className="h3 mb-1 text-primary fw-bold">Mindden TestSheet Manager Pro</h1>
@@ -113,11 +118,12 @@ function App() {
               <FileUp size={18} className="me-2" /> Cargar Excel
               <input type="file" hidden onChange={handleFileUpload} />
             </label>
-            <button className="btn btn-success shadow-sm fw-bold" onClick={exportarExcel}><Download size={18} className="me-2" /> Exportar</button>
+            <button className="btn btn-success shadow-sm fw-bold" onClick={exportarExcel}>
+              <Download size={18} className="me-2" /> Exportar Excel
+            </button>
           </div>
         </header>
 
-        {/* DASHBOARD */}
         <div className="row g-4 mb-4 align-items-stretch">
           {[
             {label: 'TOTAL', val: stats.total, color: 'primary'},
@@ -133,17 +139,15 @@ function App() {
             </div>
           ))}
           <div className="col-md-4 text-end d-flex align-items-center justify-content-end">
-            {/* CORRECCIÓN DEL BOTÓN: btn-outline-danger puro para evitar problemas de hover */}
             <button className="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill shadow-sm" onClick={reiniciarBaseDeDatos}>
               <Trash2 size={18} className="me-2"/> Limpiar Proyecto
             </button>
           </div>
         </div>
 
-        {/* FORMULARIO RÁPIDO */}
         <div className="card border-0 shadow-sm mb-4">
-          <div className="card-body p-4 text-center">
-            <form className="row g-3 align-items-end justify-content-center" onSubmit={(e) => {
+          <div className="card-body p-4">
+            <form className="row g-3 align-items-end" onSubmit={(e) => {
               e.preventDefault();
               setTests([...tests, { ...nuevoTest, id: Date.now() }]);
               setNuevoTest({ modulo: '', descripcion: '', estado: 'Pendiente', captura: '' });
@@ -164,8 +168,10 @@ function App() {
         <TablaTests 
           tests={tests} 
           onImageUpload={async (e, id) => {
-            const img = await optimizarImagen(e.target.files[0]);
-            setTests(tests.map(t => t.id === id ? { ...t, captura: img } : t));
+            if(e.target.files[0]) {
+              const img = await optimizarImagen(e.target.files[0]);
+              setTests(tests.map(t => t.id === id ? { ...t, captura: img } : t));
+            }
           }} 
           onVerImagen={setTestSeleccionado}
           onCambiarEstado={(id, val) => setTests(tests.map(t => t.id === id ? { ...t, estado: val } : t))}
@@ -173,7 +179,7 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
-        {/* MODAL DE EDICIÓN - modal-lg */}
+        {/* MODAL DE EDICIÓN ANCHO */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -245,16 +251,13 @@ function App() {
         {testSeleccionado && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}} onClick={() => setTestSeleccionado(null)}>
             <div className="modal-dialog modal-xl modal-dialog-centered">
-              <div className="modal-content bg-transparent border-0">
-                <div className="text-end mb-2">
-                  <button className="btn btn-light rounded-circle p-2" onClick={() => setTestSeleccionado(null)}><X size={24}/></button>
-                </div>
+              <div className="modal-content bg-transparent border-0 text-center">
+                <button className="btn btn-light rounded-circle p-2 mb-2 align-self-end" onClick={() => setTestSeleccionado(null)}><X size={24}/></button>
                 <img src={testSeleccionado.captura} className="img-fluid rounded shadow-lg" style={{ maxHeight: '85vh', objectFit: 'contain' }} alt="Evidencia" />
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
