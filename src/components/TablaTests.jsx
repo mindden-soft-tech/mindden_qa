@@ -100,11 +100,9 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
                   </td>
                   <td className="text-end pe-4">
                     <div className="d-flex justify-content-end gap-2">
-                      {/* Botón de Lápiz */}
                       <button className="btn btn-light btn-sm text-primary border shadow-sm" title="Editar" onClick={() => onEditar(test)}>
                         <Edit3 size={16} />
                       </button>
-                      {/* Botón de Basura */}
                       <button className="btn btn-light btn-sm text-danger border shadow-sm" title="Eliminar" onClick={() => onEliminar(test.id)}>
                         <Trash2 size={16} />
                       </button>

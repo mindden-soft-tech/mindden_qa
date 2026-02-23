@@ -64,13 +64,24 @@ function App() {
     reader.readAsBinaryString(file);
   };
 
+  // FUNCIÓN CORREGIDA PARA EXPORTAR EXCEL
   const exportarExcel = () => {
-    if (tests.length === 0) return alert("No hay datos");
-    const ws = XLSX.utils.json_to_sheet(tests.map(t => ({
-      ID: t.id, Modulo: t.modulo, Descripcion: t.descripcion, Estado: t.estado, Captura_B64: t.captura
-    })));
+    if (tests.length === 0) return alert("No hay datos para exportar");
+    
+    // Mapeo explícito para asegurar que todas las columnas existan
+    const dataParaExcel = tests.map(t => ({
+      ID: t.id,
+      Modulo: t.modulo || '',
+      Descripcion: t.descripcion || '',
+      Estado: t.estado || 'Pendiente',
+      Captura_B64: t.captura || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataParaExcel);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
+    
+    // Forzar la descarga del archivo
     XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
@@ -122,7 +133,7 @@ function App() {
             </div>
           ))}
           <div className="col-md-4 text-end d-flex align-items-center justify-content-end">
-            {/* CORRECCIÓN DE BOTÓN: Eliminado bg-opacity para evitar que el hover oculte el texto */}
+            {/* CORRECCIÓN DEL BOTÓN: btn-outline-danger puro para evitar problemas de hover */}
             <button className="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill shadow-sm" onClick={reiniciarBaseDeDatos}>
               <Trash2 size={18} className="me-2"/> Limpiar Proyecto
             </button>
@@ -162,7 +173,7 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
-        {/* MODAL DE EDICIÓN - ANCHO (modal-lg) */}
+        {/* MODAL DE EDICIÓN - modal-lg */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -230,7 +241,7 @@ function App() {
           </div>
         )}
 
-        {/* LIGHTBOX (IMAGEN GRANDE) */}
+        {/* LIGHTBOX IMAGEN */}
         {testSeleccionado && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.9)'}} onClick={() => setTestSeleccionado(null)}>
             <div className="modal-dialog modal-xl modal-dialog-centered">
