@@ -163,7 +163,7 @@ function App() {
                 <input type="text" className="form-control" placeholder="Nombre Dev" value={nuevoTest.asignadoA} onChange={e => setNuevoTest({...nuevoTest, asignadoA: e.target.value})} required />
               </div>
               <div className="col-md-2">
-                <label className="small fw-bold text-muted">TIEMPO MOFIDICACIÓN (MIN)</label>
+                <label className="small fw-bold text-muted">TIEMPO ESTIMADO (MIN)</label>
                 <input type="number" className="form-control" placeholder="Ej: 30" value={nuevoTest.tiempoEstimado} onChange={e => setNuevoTest({...nuevoTest, tiempoEstimado: e.target.value})} required />
               </div>
               <div className="col-md-2">
