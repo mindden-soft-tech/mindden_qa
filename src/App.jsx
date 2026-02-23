@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera, Clock, User } from 'lucide-react';
+import { FileUp, Download, PlusCircle, Trash2, Save, X, Camera, Clock, User, Loader2 } from 'lucide-react';
 import TablaTests from './components/TablaTests';
 
 function App() {
@@ -14,6 +14,9 @@ function App() {
   });
   const [testSeleccionado, setTestSeleccionado] = useState(null);
   const [testEnEdicion, setTestEnEdicion] = useState(null);
+  
+  // Nuevo estado para controlar la exportación
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('tester_app_data', JSON.stringify(tests));
@@ -68,25 +71,50 @@ function App() {
     reader.readAsBinaryString(file);
   };
 
-  const exportarExcel = () => {
-    try {
-      if (tests.length === 0) return alert("No hay datos para exportar");
-      const dataParaExcel = tests.map((t, index) => ({
-        "#": index + 1,
-        Modulo: t.modulo || '',
-        Descripcion: t.descripcion || '',
-        Asignado_A: t.asignadoA || '',
-        Tiempo_Minutos: t.tiempoEstimado || '',
-        Estado: t.estado || 'Pendiente',
-        Captura_B64: t.captura || ''
-      }));
-      const ws = XLSX.utils.json_to_sheet(dataParaExcel);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
-      XLSX.writeFile(wb, `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
-    } catch (error) {
-      alert("Error al generar el Excel. Reduzca el tamaño de las fotos.");
-    }
+  const exportarExcel = async () => {
+    if (tests.length === 0) return alert("No hay datos para exportar");
+    
+    setIsExporting(true); // Iniciamos estado de carga
+
+    // Usamos un pequeño delay con setTimeout para permitir que el DOM renderice el estado de carga
+    // antes de que el hilo principal se bloquee con la generación del Excel
+    setTimeout(() => {
+      try {
+        const dataParaExcel = tests.map((t, index) => ({
+          "#": index + 1,
+          Modulo: t.modulo || '',
+          Descripcion: t.descripcion || '',
+          Asignado_A: t.asignadoA || '',
+          Tiempo_Minutos: t.tiempoEstimado || '',
+          Estado: t.estado || 'Pendiente',
+          Captura_B64: t.captura || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(dataParaExcel);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte_QA");
+
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const finalData = new Blob([excelBuffer], { 
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
+        
+        const url = window.URL.createObjectURL(finalData);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Reporte_QA_${new Date().toISOString().split('T')[0]}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Error al exportar:", error);
+        alert("Error al generar el Excel. Intente reducir el número de capturas.");
+      } finally {
+        setIsExporting(false); // Finalizamos estado de carga
+      }
+    }, 100);
   };
 
   const handleGuardarCambios = (e) => {
@@ -115,8 +143,20 @@ function App() {
               <FileUp size={18} className="me-2" /> Cargar
               <input type="file" hidden onChange={handleFileUpload} />
             </label>
-            <button className="btn btn-success fw-bold" onClick={exportarExcel}>
-              <Download size={18} className="me-2" /> Exportar Excel
+            <button 
+              className="btn btn-success fw-bold d-flex align-items-center" 
+              onClick={exportarExcel}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 size={18} className="me-2 animate-spin" /> Generando...
+                </>
+              ) : (
+                <>
+                  <Download size={18} className="me-2" /> Exportar Excel
+                </>
+              )}
             </button>
           </div>
         </header>
@@ -142,7 +182,6 @@ function App() {
           </div>
         </div>
 
-        {/* FORMULARIO AMPLIADO */}
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
             <form className="row g-3 align-items-end" onSubmit={(e) => {
@@ -187,7 +226,6 @@ function App() {
           onEditar={setTestEnEdicion}
         />
 
-        {/* MODAL EDICIÓN AMPLIADO */}
         {testEnEdicion && (
           <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.7)'}}>
             <div className="modal-dialog modal-lg modal-dialog-centered">
@@ -259,6 +297,15 @@ function App() {
           </div>
         )}
       </div>
+      <style>{`
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
