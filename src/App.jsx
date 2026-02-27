@@ -194,7 +194,7 @@ function App() {
             <div className="bg-primary rounded-circle d-inline-flex p-3 mb-3 shadow">
               <CloudLightning size={40} className="text-white"/>
             </div>
-            <h3 className="fw-bold text-dark mb-1">XYNAXIS QA</h3>
+            <h3 className="fw-bold text-dark mb-1">MINDDEN QA</h3>
             <p className="text-muted small">Ingresa tus credenciales para continuar</p>
           </div>
           
@@ -227,7 +227,7 @@ function App() {
             </button>
           </form>
           <div className="mt-4 text-center">
-            <span className="text-muted" style={{ fontSize: '10px' }}>© 2026 XYNAXIS CLOUD v2.0</span>
+            <span className="text-muted" style={{ fontSize: '10px' }}>© 2026 MINDDEN CLOUD v2.0</span>
           </div>
         </div>
       </div>
@@ -267,7 +267,7 @@ function App() {
             <div className="bg-white rounded-circle p-1 d-flex align-items-center justify-content-center" style={{width: '32px', height: '32px'}}>
               <CloudLightning size={20} className="text-primary"/>
             </div>
-            <span>XYNAXIS <span className="text-info">QA Cloud</span></span>
+            <span>MINDDEN <span className="text-info">QA Cloud</span></span>
           </div>
           <div className="d-flex gap-2">
             <button className={`btn btn-sm ${view === 'table' ? 'btn-light text-primary' : 'btn-outline-light'}`} onClick={() => setView('table')}>
