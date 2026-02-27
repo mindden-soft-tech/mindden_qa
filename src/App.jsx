@@ -25,7 +25,7 @@ function App() {
   const [toasts, setToasts] = useState([]);
   
   // Configuración AWS y Cloudinary
-  const API_URL = "http://52.51.95.132:3000/test_cases";
+  const API_URL = "https://52.51.95.132/test_cases";
   const CLOUD_NAME = "dzm6gj8ol"; 
   const UPLOAD_PRESET = "testsheet_preset"; 
 

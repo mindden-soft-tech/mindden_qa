@@ -8,8 +8,8 @@ import {
   Timer, Users, Layers, RefreshCw, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 
-const API_URL      = "http://52.51.95.132:3000/test_cases";
-const HISTORIAL_URL = "http://52.51.95.132:3000/test_historial";
+const API_URL      = "https://52.51.95.132/test_cases";
+const HISTORIAL_URL = "https://52.51.95.132/test_historial";
 
 const pct = (n, total) => total === 0 ? 0 : Math.round((n / total) * 100);
 
