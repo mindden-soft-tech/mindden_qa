@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import { Camera, Eye, ChevronLeft, ChevronRight, Filter, X, Edit3, Trash2, User, Clock } from 'lucide-react';
 
 const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onEliminar, onEditar }) => {
-  const [filtros, setFiltros] = useState({ modulo: '', descripcion: '', estado: '', asignadoA: '' });
+  const [filtros, setFiltros] = useState({ modulo: '', descripcion: '', estado: '', asignado_a: '' });
   const [paginaActual, setPaginaActual] = useState(1);
   const elementosPorPagina = 10;
 
+  // Adaptado a nombres de base de datos
   const filtrados = tests.filter(t => {
     return (
       (t.modulo?.toLowerCase().includes(filtros.modulo.toLowerCase())) &&
       (t.descripcion?.toLowerCase().includes(filtros.descripcion.toLowerCase())) &&
       (t.estado?.toLowerCase().includes(filtros.estado.toLowerCase())) &&
-      (t.asignadoA?.toLowerCase().includes(filtros.asignadoA.toLowerCase()))
+      (t.asignado_a?.toLowerCase().includes(filtros.asignado_a.toLowerCase()))
     );
   });
 
@@ -27,86 +28,64 @@ const TablaTests = ({ tests, onImageUpload, onVerImagen, onCambiarEstado, onElim
   return (
     <div className="card border-0 shadow-sm overflow-hidden bg-white">
       <div className="table-responsive">
-        <table className="table table-hover mb-0 align-middle">
-          <thead className="bg-light border-bottom">
+        <table className="table table-hover align-middle mb-0">
+          <thead className="bg-light">
             <tr>
-              <th className="ps-4 py-3 text-secondary small fw-bold text-uppercase">#</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase">Módulo</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase">Descripción</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase">Asignado a / Tiempo</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase">Estado</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase text-center">Evidencia</th>
-              <th className="py-3 text-secondary small fw-bold text-uppercase text-end pe-4">Acciones</th>
+              <th className="ps-4 py-3 text-muted small fw-bold" style={{width: '120px'}}>MÓDULO</th>
+              <th className="py-3 text-muted small fw-bold">DESCRIPCIÓN</th>
+              <th className="py-3 text-muted small fw-bold" style={{width: '150px'}}>ESTADO</th>
+              <th className="py-3 text-muted small fw-bold" style={{width: '150px'}}>RESPONSABLE</th>
+              <th className="py-3 text-muted small fw-bold" style={{width: '100px'}}>TIEMPO</th>
+              <th className="py-3 text-muted small fw-bold" style={{width: '120px'}}>EVIDENCIA</th>
+              <th className="py-3 text-muted small fw-bold text-end pe-4" style={{width: '120px'}}>ACCIONES</th>
             </tr>
-            <tr className="bg-white border-bottom">
-              <th className="ps-4 py-2"><Filter size={14} className="text-muted" /></th>
-              <th className="py-2">
-                <input type="text" name="modulo" className="form-control form-control-sm border-light bg-light" placeholder="Módulo..." value={filtros.modulo} onChange={handleFiltroChange} />
-              </th>
-              <th className="py-2">
-                <input type="text" name="descripcion" className="form-control form-control-sm border-light bg-light" placeholder="Buscar..." value={filtros.descripcion} onChange={handleFiltroChange} />
-              </th>
-              <th className="py-2">
-                <input type="text" name="asignadoA" className="form-control form-control-sm border-light bg-light" placeholder="Dev..." value={filtros.asignadoA} onChange={handleFiltroChange} />
-              </th>
-              <th className="py-2">
-                <select name="estado" className="form-select form-select-sm border-light bg-light" value={filtros.estado} onChange={handleFiltroChange}>
+            <tr className="bg-white">
+              <th className="ps-3"><input name="modulo" className="form-control form-control-sm border-0 bg-light" placeholder="Filtrar..." onChange={handleFiltroChange}/></th>
+              <th><input name="descripcion" className="form-control form-control-sm border-0 bg-light" placeholder="Buscar..." onChange={handleFiltroChange}/></th>
+              <th>
+                <select name="estado" className="form-select form-select-sm border-0 bg-light" onChange={handleFiltroChange}>
                   <option value="">Todos</option>
                   <option value="Pendiente">Pendiente</option>
                   <option value="Pasó">Pasó</option>
                   <option value="Falló">Falló</option>
                 </select>
               </th>
-              <th colSpan="2" className="text-end pe-4">
-                <button className="btn btn-sm text-primary p-0 fw-bold small" onClick={() => setFiltros({modulo:'', descripcion:'', estado:'', asignadoA:''})}>
-                  <X size={14} /> Limpiar
-                </button>
-              </th>
+              <th><input name="asignado_a" className="form-control form-control-sm border-0 bg-light" placeholder="Filtro..." onChange={handleFiltroChange}/></th>
+              <th></th>
+              <th></th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {elementosVisibles.length === 0 ? (
-              <tr><td colSpan="7" className="text-center py-5 text-muted small">No se encontraron registros</td></tr>
+              <tr><td colSpan="7" className="text-center py-5 text-muted">No se encontraron registros en la nube.</td></tr>
             ) : (
-              elementosVisibles.map((test, index) => (
-                <tr key={test.id} className="border-bottom border-light">
-                  <td className="ps-4 text-muted small fw-bold">
-                    {(index + 1) + (paginaActual - 1) * elementosPorPagina}
-                  </td>
-                  <td><span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 fw-semibold">{test.modulo}</span></td>
-                  <td className="small text-wrap" style={{ maxWidth: '250px' }}>{test.descripcion}</td>
-                  <td>
-                    <div className="d-flex flex-column gap-1">
-                      <div className="small fw-bold text-dark d-flex align-items-center">
-                        <User size={12} className="me-1 text-primary" /> {test.asignadoA || 'Sin asignar'}
-                      </div>
-                      <div className="small text-muted d-flex align-items-center">
-                        <Clock size={12} className="me-1" /> {test.tiempoEstimado || '0'} min
-                      </div>
-                    </div>
-                  </td>
+              elementosVisibles.map((test) => (
+                <tr key={test.id} className="border-bottom-0">
+                  <td className="ps-4"><span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2">{test.modulo}</span></td>
+                  <td className="small text-dark fw-medium">{test.descripcion}</td>
                   <td>
                     <select 
-                      className={`form-select form-select-sm border-0 fw-bold ${
-                        test.estado === 'Falló' ? 'text-danger bg-danger bg-opacity-10' : 
-                        test.estado === 'Pasó' ? 'text-success bg-success bg-opacity-10' : 'text-warning bg-warning bg-opacity-10'
+                      value={test.estado} 
+                      className={`form-select form-select-sm fw-bold border-0 ${
+                        test.estado === 'Pasó' ? 'text-success bg-success-subtle' : 
+                        test.estado === 'Falló' ? 'text-danger bg-danger-subtle' : 'text-warning bg-warning-subtle'
                       }`}
-                      value={test.estado}
                       onChange={(e) => onCambiarEstado(test.id, e.target.value)}
                     >
-                      <option value="Pendiente">⏳ Pendiente</option>
-                      <option value="Pasó">✅ Pasó</option>
-                      <option value="Falló">❌ Falló</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Pasó">Pasó</option>
+                      <option value="Falló">Falló</option>
                     </select>
                   </td>
-                  <td className="text-center">
-                    {test.captura ? (
-                      <button className="btn btn-sm btn-outline-dark border-light shadow-sm px-3 rounded-pill" onClick={() => onVerImagen(test)}>
-                        <Eye size={14} className="me-1" /> Ver
-                      </button>
+                  <td className="small"><User size={14} className="me-1 text-muted"/> {test.asignado_a || 'Sin asignar'}</td>
+                  <td className="small"><Clock size={14} className="me-1 text-muted"/> {test.tiempo_estimado}m</td>
+                  <td>
+                    {test.captura_url ? (
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => onVerImagen(test)}><Eye size={16} /></button>
                     ) : (
-                      <label className="btn btn-sm btn-light border-0 px-3 rounded-pill text-secondary" style={{ cursor: 'pointer' }}>
-                        <Camera size={14} className="me-1" /> Foto
+                      <label className="btn btn-sm btn-outline-secondary mb-0">
+                        <Camera size={16} />
                         <input type="file" hidden onChange={(e) => onImageUpload(e, test.id)} accept="image/*" />
                       </label>
                     )}
