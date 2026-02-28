@@ -364,7 +364,7 @@ const Dashboard = () => {
                 </div>
                 <div className="d-flex align-items-baseline gap-3 mb-2">
                   <h1 className="display-2 fw-bold mb-0 text-danger">{s.tFallo}</h1>
-                  <span className="h3 text-white-50 fw-light">min perdidos</span>
+                  <span className="h3 text-white-50 fw-light">min utilizados</span>
                 </div>
                 <p className="text-white-50 fs-6">
                   de <span className="text-white fw-bold">{s.tTotal} min</span> totales analizados ·{' '}
@@ -393,8 +393,8 @@ const Dashboard = () => {
                       {isCritical ? <ShieldAlert size={22} className="text-danger" /> : <ShieldCheck size={22} className="text-success" />}
                     </div>
                     <div>
-                      <p className="mb-0 fw-bold small text-uppercase">Estado Operativo</p>
-                      <p className="mb-0 small opacity-75">
+                      <p className="mb-0 fw-bold small text-uppercase text-black">Estado Operativo</p>
+                      <p className="mb-0 small text-black">
                         {isCritical
                           ? 'Atención: La tasa de error supera el margen de seguridad.'
                           : 'Óptimo: El sistema se mantiene estable y saludable.'}

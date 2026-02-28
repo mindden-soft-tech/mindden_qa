@@ -6,3 +6,139 @@ Abrir https://52.51.95.132/test_cases
 
 user: "Equipo_QA",
 pass: "4xjd@zuHx"
+
+
+
+BBDD
+
+-- =====================================================
+-- CREACIÓN DE TABLAS
+-- =====================================================
+
+-- 1. TABLA PRINCIPAL: Casos de prueba
+CREATE TABLE test_cases (
+    id SERIAL PRIMARY KEY,                                -- ID automático
+    modulo VARCHAR(100) NOT NULL,                         -- Módulo (obligatorio)
+    descripcion TEXT NOT NULL,                            -- Descripción (obligatorio)
+    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente',      -- Estado con valor por defecto
+    asignado_a VARCHAR(100),                               -- A quién se asignó
+    tiempo_estimado INTEGER,                               -- Minutos (número entero)
+    captura_url TEXT,                                      -- URL de la imagen
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Fecha automática al crear
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Fecha automática al actualizar
+    activo BOOLEAN DEFAULT TRUE,                           -- true = visible, false = eliminado
+    
+    -- Restricción: solo estos estados permitidos
+    CONSTRAINT estado_valido CHECK (estado IN ('Pendiente', 'Pasó', 'Falló'))
+);
+
+-- Comentarios para documentar (opcional pero útil)
+COMMENT ON TABLE test_cases IS 'Almacena todos los casos de prueba';
+COMMENT ON COLUMN test_cases.estado IS 'Pendiente, Pasó o Falló';
+COMMENT ON COLUMN test_cases.activo IS 'false cuando se "elimina" el registro';
+
+-- 2. TABLA DE HISTORIAL: Registra todos los cambios
+CREATE TABLE test_historial (
+    id SERIAL PRIMARY KEY,
+    test_id INTEGER REFERENCES test_cases(id) ON DELETE CASCADE, -- Si borras el test, borra su historial
+    estado_anterior VARCHAR(20),
+    estado_nuevo VARCHAR(20),
+    usuario VARCHAR(100),
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    comentario TEXT
+);
+
+COMMENT ON TABLE test_historial IS 'Auditoría de cambios de estado';
+
+-- 3. TABLA DE MÓDULOS: Catálogo de módulos
+CREATE TABLE modulos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL,  -- No puede haber dos módulos con mismo nombre
+    descripcion TEXT,
+    activo BOOLEAN DEFAULT TRUE
+);
+
+-- 4. TABLA DE USUARIOS: Desarrolladores y testers
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    rol VARCHAR(50) DEFAULT 'tester',
+    activo BOOLEAN DEFAULT TRUE
+);
+
+-- =====================================================
+-- ÍNDICES (Para que las búsquedas sean RÁPIDAS)
+-- =====================================================
+
+-- Índices en columnas que se buscan frecuentemente
+CREATE INDEX idx_test_cases_estado ON test_cases(estado);
+CREATE INDEX idx_test_cases_modulo ON test_cases(modulo);
+CREATE INDEX idx_test_cases_asignado ON test_cases(asignado_a);
+CREATE INDEX idx_test_cases_fecha ON test_cases(fecha_creacion);
+
+-- =====================================================
+-- FUNCIONES Y TRIGGERS (Automatizaciones)
+-- =====================================================
+
+-- Función 1: Actualiza la fecha automáticamente
+CREATE OR REPLACE FUNCTION actualizar_fecha()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger que ejecuta la función anterior
+CREATE TRIGGER trigger_actualizar_fecha
+    BEFORE UPDATE ON test_cases
+    FOR EACH ROW
+    EXECUTE FUNCTION actualizar_fecha();
+
+-- Función 2: Guarda en historial cuando cambia el estado
+CREATE OR REPLACE FUNCTION guardar_en_historial()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.estado IS DISTINCT FROM NEW.estado THEN
+        INSERT INTO test_historial (test_id, estado_anterior, estado_nuevo, usuario)
+        VALUES (NEW.id, OLD.estado, NEW.estado, CURRENT_USER);
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger para historial
+CREATE TRIGGER trigger_historial
+    AFTER UPDATE ON test_cases
+    FOR EACH ROW
+    EXECUTE FUNCTION guardar_en_historial();
+
+-- =====================================================
+-- VISTAS (Consultas pre-hechas para facilitar reportes)
+-- =====================================================
+
+-- Vista 1: Estadísticas diarias
+CREATE VIEW estadisticas_diarias AS
+SELECT 
+    DATE(fecha_creacion) as dia,
+    COUNT(*) as total_tests,
+    COUNT(CASE WHEN estado = 'Pasó' THEN 1 END) as tests_pasaron,
+    COUNT(CASE WHEN estado = 'Falló' THEN 1 END) as tests_fallaron,
+    COUNT(CASE WHEN estado = 'Pendiente' THEN 1 END) as tests_pendientes
+FROM test_cases
+WHERE activo = true
+GROUP BY DATE(fecha_creacion)
+ORDER BY dia DESC;
+
+-- Vista 2: Resumen por módulo
+CREATE VIEW resumen_por_modulo AS
+SELECT 
+    modulo,
+    COUNT(*) as total,
+    COUNT(CASE WHEN estado = 'Pasó' THEN 1 END) as pasaron,
+    COUNT(CASE WHEN estado = 'Falló' THEN 1 END) as fallaron,
+    ROUND(COUNT(CASE WHEN estado = 'Pasó' THEN 1 END) * 100.0 / COUNT(*), 2) as porcentaje_exito
+FROM test_cases
+WHERE activo = true
+GROUP BY modulo;
